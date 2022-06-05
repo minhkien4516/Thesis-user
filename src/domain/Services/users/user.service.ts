@@ -42,7 +42,7 @@ export class UserService {
 
   async getUserById(userId: string): Promise<User> {
     try {
-      const user = await this.sequelize.query('SP_GetUserById @id:id', {
+      const user = await this.sequelize.query('SP_GetUserById @id=:id', {
         type: QueryTypes.SELECT,
         replacements: { id: userId },
         raw: true,

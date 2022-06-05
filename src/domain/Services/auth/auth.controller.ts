@@ -79,16 +79,22 @@ export class AuthController {
     @Req() request: Request,
   ) {
     try {
-      createUserDTO.role = Role.corporation;
-      const checkUser = await this.getUserByEmail(createUserDTO.email);
+      if (createUserDTO.email.toString().includes('@st.huflit.edu.vn')) {
+        createUserDTO.role = Role.student;
+      } else {
+        createUserDTO.role = Role.corporation;
+      }
+      const checkUser = await this.userService.getUserByEmail(
+        createUserDTO.email,
+      );
       if (checkUser)
         throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
       const user = await this.userService.createNewUser(createUserDTO);
-      console.log(user.id);
+      console.log(user.role);
       const token = await this.authService.generateTokenForVerify(user.id);
       console.log(token);
+      const { host } = request.headers;
       // const { email, firstName, lastName } = createUserDTO;
-      // const { host } = request.headers;
       // // await this.emailService.sendRegistrationMail(
       // //   email,
       // //   firstName,
@@ -99,11 +105,8 @@ export class AuthController {
       return {
         user,
         token,
-        // message:
-        //   'Register account successfully! ' +
-        //   'A verification link has been sent to your email, ' +
-        //   'please click that link it to activate your account.',
-        // status: HttpStatus.CREATED,
+        host,
+        message: 'Register account successfully!',
       };
     } catch (error) {
       this.logger.error(error.message);
