@@ -85,11 +85,9 @@ export class AuthController {
     console.log(data);
     await Promise.all(
       data.students.map(async (item) => {
-        if (item.email.toString().includes(STUDENT_MAIL)) {
+        if (item.email.toString().includes(STUDENT_MAIL))
           item.role = Role.student;
-        } else {
-          item.role = Role.corporation;
-        }
+
         const checkUser = await this.userService.getUserByEmail(item.email);
         if (checkUser)
           throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
