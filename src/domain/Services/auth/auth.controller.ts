@@ -1,5 +1,6 @@
 import { compare } from 'bcrypt';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -22,6 +23,11 @@ import { UpdateUserDTO } from '../users/dtos/update-user.dto';
 import { UserService } from '../users/user.service';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { STUDENT_MAIL } from '../../../constants/auth.constant';
+import { GrpcMethod } from '@nestjs/microservices';
+import { SaveStudentAccountForOwnerRequest } from '../../interfaces/saveStudentAccountForOwnerRequest.interface';
+import { Observable } from 'rxjs';
+import { SaveStudentAccountForOwnerResponse } from '../../interfaces/saveStudentAccountForOwnerResponse.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -72,6 +78,40 @@ export class AuthController {
     }
   }
 
+  @GrpcMethod('AuthService')
+  async registerStudent(
+    data: SaveStudentAccountForOwnerRequest,
+  ): Promise<SaveStudentAccountForOwnerResponse> {
+    console.log(data);
+    await Promise.all(
+      data.students.map(async (item) => {
+        if (item.email.toString().includes(STUDENT_MAIL)) {
+          item.role = Role.student;
+        } else {
+          item.role = Role.corporation;
+        }
+        const checkUser = await this.userService.getUserByEmail(item.email);
+        if (checkUser)
+          throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
+        const students = await this.userService.createNewAccountStudent(item);
+
+        if (students.length < 0)
+          throw new HttpException(
+            'Error when register account, please check again ',
+            HttpStatus.BAD_REQUEST,
+          );
+        await this.authService.generateTokenForVerify(students[0].id);
+
+        return item;
+      }),
+    );
+    return { students: data.students };
+  }
+  catch(error) {
+    this.logger.error(error.message);
+    throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+  }
+
   @Public()
   @Post()
   async register(
@@ -79,7 +119,7 @@ export class AuthController {
     @Req() request: Request,
   ) {
     try {
-      if (createUserDTO.email.toString().includes('@st.huflit.edu.vn')) {
+      if (createUserDTO.email.toString().includes(STUDENT_MAIL)) {
         createUserDTO.role = Role.student;
       } else {
         createUserDTO.role = Role.corporation;
@@ -102,12 +142,17 @@ export class AuthController {
       // //   host,
       // //   token,
       // // );
-      return {
-        user,
-        token,
-        host,
-        message: 'Register account successfully!',
-      };
+      if (Object.values(user) != undefined)
+        return {
+          user,
+          token,
+          host,
+          message: 'Register account successfully!',
+        };
+      throw new HttpException(
+        'Error when register account, please check again ',
+        HttpStatus.BAD_REQUEST,
+      );
     } catch (error) {
       this.logger.error(error.message);
       throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);

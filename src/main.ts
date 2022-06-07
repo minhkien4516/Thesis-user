@@ -6,14 +6,28 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { JwtAuthGuard } from './domain/Services/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './domain/Services/auth/guards/role.guard';
 import cookieParser from 'cookie-parser';
+import { Transport } from '@nestjs/microservices';
+import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
+  const configService = app.get(ConfigService);
   app.useGlobalGuards(new JwtAuthGuard(new Reflector()));
   app.useGlobalGuards(new RolesGuard(new Reflector()));
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true }));
+
+  app.connectMicroservice({
+    transport: Transport.GRPC,
+    options: {
+      package: 'auth',
+      protoPath: join(__dirname, 'domain/Services/auth/auth.proto'),
+      url: configService.get<string>('GRPC_CONNECTION_URL'),
+    },
+  });
+
   await app.startAllMicroservices();
 
   const config = new DocumentBuilder()

@@ -40,6 +40,35 @@ export class UserService {
     }
   }
 
+  async createNewAccountStudent(createUserDTO: CreateUserDTO) {
+    try {
+      const key = await hash(createUserDTO.password, 12);
+      const user = await this.sequelize.query(
+        'SP_CreateNewUser @email=:email, @key=:key, ' +
+          '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
+          '@presenterPhoneNumber=:phoneNumber, @role=:role',
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            email: createUserDTO.email,
+            firstName: createUserDTO.firstName,
+            lastName: createUserDTO.lastName,
+            phoneNumber: createUserDTO.phoneNumber,
+            role: createUserDTO.role,
+            key,
+          },
+          raw: true,
+          mapToModel: true,
+          model: User,
+        },
+      );
+      return user;
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new DatabaseError(error);
+    }
+  }
+
   async getUserById(userId: string): Promise<User> {
     try {
       const user = await this.sequelize.query('SP_GetUserById @id=:id', {
