@@ -24,4 +24,7 @@ export class CreateUserDTO {
   @IsString()
   @IsNotEmpty()
   role?: string | null;
+
+  @IsString()
+  studentId?: string | null;
 }

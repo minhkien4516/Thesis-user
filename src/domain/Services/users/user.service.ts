@@ -17,7 +17,7 @@ export class UserService {
       const user = await this.sequelize.query(
         'SP_CreateNewUser @email=:email, @key=:key, ' +
           '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
-          '@presenterPhoneNumber=:phoneNumber, @role=:role',
+          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId',
         {
           type: QueryTypes.SELECT,
           replacements: {
@@ -26,6 +26,7 @@ export class UserService {
             lastName: createUserDTO.lastName,
             phoneNumber: createUserDTO.phoneNumber,
             role: createUserDTO.role,
+            studentId: createUserDTO.studentId,
             key,
           },
           raw: true,
@@ -46,7 +47,7 @@ export class UserService {
       const user = await this.sequelize.query(
         'SP_CreateNewUser @email=:email, @key=:key, ' +
           '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
-          '@presenterPhoneNumber=:phoneNumber, @role=:role',
+          '@presenterPhoneNumber=:phoneNumber, @role=:role , @studentId=:studentId',
         {
           type: QueryTypes.SELECT,
           replacements: {
@@ -55,6 +56,7 @@ export class UserService {
             lastName: createUserDTO.lastName,
             phoneNumber: createUserDTO.phoneNumber,
             role: createUserDTO.role,
+            studentId: createUserDTO.studentId,
             key,
           },
           raw: true,
@@ -141,8 +143,7 @@ export class UserService {
           model: User,
         },
       );
-
-      return updated[0];
+      return updated;
     } catch (error) {
       this.logger.error(error.message);
       throw new DatabaseError(error);

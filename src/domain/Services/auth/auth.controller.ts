@@ -26,7 +26,6 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { STUDENT_MAIL } from '../../../constants/auth.constant';
 import { GrpcMethod } from '@nestjs/microservices';
 import { SaveStudentAccountForOwnerRequest } from '../../interfaces/saveStudentAccountForOwnerRequest.interface';
-import { Observable } from 'rxjs';
 import { SaveStudentAccountForOwnerResponse } from '../../interfaces/saveStudentAccountForOwnerResponse.interface';
 
 @Controller('auth')
@@ -67,10 +66,29 @@ export class AuthController {
         request.user.role,
       );
       response.cookie('token', token);
-      const { email, firstName, lastName, phoneNumber, role, id } =
+      const { email, firstName, lastName, phoneNumber, role, id, studentId } =
         request.user;
+      if (role === Role.student)
+        return response.send({
+          user: {
+            email,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            id,
+            studentId,
+          },
+        });
       return response.send({
-        user: { email, firstName, lastName, phoneNumber, role, id },
+        user: {
+          email,
+          firstName,
+          lastName,
+          phoneNumber,
+          role,
+          id,
+        },
       });
     } catch (error) {
       this.logger.error(error.message);
@@ -82,32 +100,32 @@ export class AuthController {
   async registerStudent(
     data: SaveStudentAccountForOwnerRequest,
   ): Promise<SaveStudentAccountForOwnerResponse> {
-    console.log(data);
-    await Promise.all(
-      data.students.map(async (item) => {
-        if (item.email.toString().includes(STUDENT_MAIL))
-          item.role = Role.student;
+    try {
+      await Promise.all(
+        data.students.map(async (item) => {
+          if (item.email.toString().includes(STUDENT_MAIL))
+            item.role = Role.student;
 
-        const checkUser = await this.userService.getUserByEmail(item.email);
-        if (checkUser)
-          throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
-        const students = await this.userService.createNewAccountStudent(item);
+          const checkUser = await this.userService.getUserByEmail(item.email);
+          if (checkUser)
+            throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
+          const students = await this.userService.createNewAccountStudent(item);
 
-        if (students.length < 0)
-          throw new HttpException(
-            'Error when register account, please check again ',
-            HttpStatus.BAD_REQUEST,
-          );
-        await this.authService.generateTokenForVerify(students[0].id);
+          if (students.length < 0)
+            throw new HttpException(
+              'Error when register account, please check again ',
+              HttpStatus.BAD_REQUEST,
+            );
+          await this.authService.generateTokenForVerify(students[0].id);
 
-        return item;
-      }),
-    );
-    return { students: data.students };
-  }
-  catch(error) {
-    this.logger.error(error.message);
-    throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+          return item;
+        }),
+      );
+      return { students: data.students };
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+    }
   }
 
   @Public()
@@ -121,6 +139,7 @@ export class AuthController {
         createUserDTO.role = Role.student;
       } else {
         createUserDTO.role = Role.corporation;
+        createUserDTO.studentId = null;
       }
       const checkUser = await this.userService.getUserByEmail(
         createUserDTO.email,
@@ -338,14 +357,18 @@ export class AuthController {
         userId,
         updateUserDTO,
       );
-      if (Object.values(updatedUser)[0].phoneNumber === 1)
+      console.log(updatedUser.length);
+      if (!updatedUser.length)
         throw new HttpException('Phone number exists!', HttpStatus.BAD_REQUEST);
       return {
         user: updatedUser[0],
       };
     } catch (error) {
       this.logger.error(error.message);
-      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new HttpException(
+        error.message,
+        error?.status || HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
   }
 
@@ -353,12 +376,7 @@ export class AuthController {
   @Get('users')
   async getAllUsers() {
     try {
-      const [result, error] = await this.userService.getAllUsers();
-      if (error) {
-        console.log(error);
-        throw new HttpException(error, HttpStatus.BAD_REQUEST);
-      }
-      return result;
+      return (await this.userService.getAllUsers()) || [];
     } catch (error) {
       this.logger.error(error.message);
       throw new HttpException(
