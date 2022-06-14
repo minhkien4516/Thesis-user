@@ -1,6 +1,6 @@
 import { compare } from 'bcrypt';
+import { hash } from 'bcrypt';
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -10,7 +10,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   Res,
   UseGuards,
@@ -215,6 +214,27 @@ export class AuthController {
   }
 
   @Public()
+  @Post('resetPassword')
+  async ResetPassword(@Body('email') email: string) {
+    try {
+      const resetPasswordCode =
+        await this.userService.generateResetPasswordCode(email);
+      // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
+      const user = await this.userService.getUserByEmail(email);
+      await this.userService.resetPassword(email, user.phoneNumber);
+      return {
+        password: user.phoneNumber,
+        message:
+          'We have just set a new password for you. Please login again with password is your phoneNumber',
+        status: HttpStatus.CREATED,
+      };
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  @Public()
   @Post('resetPasswordCode')
   async sendCodeToResetPassword(@Body('email') email: string) {
     try {
@@ -222,6 +242,7 @@ export class AuthController {
         await this.userService.generateResetPasswordCode(email);
       // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
       return {
+        resetPasswordCode,
         message:
           'We have just sent instruction to your email! Please check your email!',
         status: HttpStatus.OK,
