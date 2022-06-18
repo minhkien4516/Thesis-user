@@ -1,3 +1,4 @@
+import { UniversityModule } from './../university/university.module';
 import { UserModule } from './../users/user.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -22,6 +23,7 @@ import { LocalStrategy } from './strategies/local.strategy';
         issuer: process.env.ISSUER,
       },
     }),
+    UniversityModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, UserService, LocalStrategy, JwtStrategy],

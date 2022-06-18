@@ -1,1 +1,1 @@
-export const STUDENT_MAIL = '@st.huflit.edu.vn';
+export const MAIL_STUDENT = '@st.huflit.edu.vn';

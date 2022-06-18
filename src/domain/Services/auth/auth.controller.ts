@@ -1,3 +1,4 @@
+import { StudentFilter } from './../../interfaces/getStudentForClients.interface';
 import { compare } from 'bcrypt';
 import { hash } from 'bcrypt';
 import {
@@ -22,10 +23,12 @@ import { UpdateUserDTO } from '../users/dtos/update-user.dto';
 import { UserService } from '../users/user.service';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { STUDENT_MAIL } from '../../../constants/auth.constant';
+import { MAIL_STUDENT } from '../../../constants/auth.constant';
 import { GrpcMethod } from '@nestjs/microservices';
 import { SaveStudentAccountForOwnerRequest } from '../../interfaces/saveStudentAccountForOwnerRequest.interface';
 import { SaveStudentAccountForOwnerResponse } from '../../interfaces/saveStudentAccountForOwnerResponse.interface';
+import { UniversityService } from '../university/university.service';
+import { firstValueFrom } from 'rxjs';
 
 @Controller('auth')
 export class AuthController {
@@ -33,7 +36,8 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
-    private userService: UserService,
+    private readonly userService: UserService,
+    private readonly universityService: UniversityService,
   ) {}
 
   @Public()
@@ -67,7 +71,9 @@ export class AuthController {
       response.cookie('token', token);
       const { email, firstName, lastName, phoneNumber, role, id, studentId } =
         request.user;
-      if (role === Role.student)
+
+      if (role === Role.student) {
+        const student = await this.getStudentByIdGrpc(studentId);
         return response.send({
           user: {
             email,
@@ -77,8 +83,10 @@ export class AuthController {
             role,
             id,
             studentId,
+            student,
           },
         });
+      }
       return response.send({
         user: {
           email,
@@ -102,7 +110,7 @@ export class AuthController {
     try {
       await Promise.all(
         data.students.map(async (item) => {
-          if (item.email.toString().includes(STUDENT_MAIL))
+          if (item.email.toString().includes(MAIL_STUDENT))
             item.role = Role.student;
 
           const checkUser = await this.userService.getUserByEmail(item.email);
@@ -134,7 +142,7 @@ export class AuthController {
     @Req() request: Request,
   ) {
     try {
-      if (createUserDTO.email.toString().includes(STUDENT_MAIL)) {
+      if (createUserDTO.email.toString().includes(MAIL_STUDENT)) {
         createUserDTO.role = Role.student;
       } else {
         createUserDTO.role = Role.corporation;
@@ -226,7 +234,7 @@ export class AuthController {
         password: user.phoneNumber,
         message:
           'We have just set a new password for you. Please login again with password is your phoneNumber',
-        status: HttpStatus.CREATED,
+        result: true,
       };
     } catch (error) {
       this.logger.error(error.message);
@@ -234,24 +242,24 @@ export class AuthController {
     }
   }
 
-  @Public()
-  @Post('resetPasswordCode')
-  async sendCodeToResetPassword(@Body('email') email: string) {
-    try {
-      const resetPasswordCode =
-        await this.userService.generateResetPasswordCode(email);
-      // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
-      return {
-        resetPasswordCode,
-        message:
-          'We have just sent instruction to your email! Please check your email!',
-        status: HttpStatus.OK,
-      };
-    } catch (error) {
-      this.logger.error(error.message);
-      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-  }
+  // @Public()
+  // @Post('resetPasswordCode')
+  // async sendCodeToResetPassword(@Body('email') email: string) {
+  //   try {
+  //     const resetPasswordCode =
+  //       await this.userService.generateResetPasswordCode(email);
+  //     // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
+  //     return {
+  //       resetPasswordCode,
+  //       message:
+  //         'We have just sent instruction to your email! Please check your email!',
+  //       result: true,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error(error.message);
+  //     throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+  //   }
+  // }
 
   @Public()
   @Post('checkResetPasswordCode')
@@ -416,4 +424,21 @@ export class AuthController {
   //   }
   //   return data;
   // }
+
+  public async getStudentByIdGrpc(id: string): Promise<StudentFilter> {
+    try {
+      const data = await firstValueFrom(
+        this.universityService.getStudentByIdGrpc({
+          id,
+        }),
+      );
+      return data;
+    } catch (error) {
+      this.logger.error(
+        'Error when get information details for student from user service: ',
+        error.message,
+      );
+      return {};
+    }
+  }
 }
