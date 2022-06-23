@@ -117,13 +117,13 @@ export class AuthController {
           if (checkUser)
             throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
           const students = await this.userService.createNewAccountStudent(item);
+          await this.authService.generateTokenForVerify(students[0].id);
 
           if (students.length < 0)
             throw new HttpException(
               'Error when register account, please check again ',
               HttpStatus.BAD_REQUEST,
             );
-          await this.authService.generateTokenForVerify(students[0].id);
 
           return item;
         }),
@@ -154,10 +154,10 @@ export class AuthController {
       if (checkUser)
         throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
       const user = await this.userService.createNewUser(createUserDTO);
-      console.log(user.role);
+      // console.log(user.role);
       const token = await this.authService.generateTokenForVerify(user.id);
-      console.log(token);
-      const { host } = request.headers;
+      // console.log(token);
+      // const { host } = request.headers;
       // const { email, firstName, lastName } = createUserDTO;
       // // await this.emailService.sendRegistrationMail(
       // //   email,
@@ -170,7 +170,7 @@ export class AuthController {
         return {
           user,
           token,
-          host,
+          // host,
           message: 'Register account successfully!',
         };
       throw new HttpException(
