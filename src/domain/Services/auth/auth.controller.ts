@@ -114,8 +114,9 @@ export class AuthController {
             item.role = Role.student;
 
           const checkUser = await this.userService.getUserByEmail(item.email);
-          if (checkUser)
+          if (checkUser) {
             throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
+          }
           const students = await this.userService.createNewAccountStudent(item);
           await this.authService.generateTokenForVerify(students[0].id);
 
