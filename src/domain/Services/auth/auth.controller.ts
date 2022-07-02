@@ -23,12 +23,15 @@ import { UpdateUserDTO } from '../users/dtos/update-user.dto';
 import { UserService } from '../users/user.service';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { MAIL_STUDENT } from '../../../constants/auth.constant';
+import { MAIL_STUDENT, MAIL_TEACHER } from '../../../constants/auth.constant';
 import { GrpcMethod } from '@nestjs/microservices';
 import { SaveStudentAccountForOwnerRequest } from '../../interfaces/saveStudentAccountForOwnerRequest.interface';
 import { SaveStudentAccountForOwnerResponse } from '../../interfaces/saveStudentAccountForOwnerResponse.interface';
 import { UniversityService } from '../university/university.service';
 import { firstValueFrom } from 'rxjs';
+import { SaveTeacherAccountForOwnerRequest } from '../../interfaces/saveTeacherAccountForOwnerRequest.interface';
+import { SaveTeacherAccountForOwnerResponse } from '../../interfaces/saveTeacherAccountForOwnerResponse.interface';
+import { TeacherDetail } from '../../interfaces/getTeacherForClients.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -69,8 +72,16 @@ export class AuthController {
         request.user.role,
       );
       response.cookie('token', token);
-      const { email, firstName, lastName, phoneNumber, role, id, studentId } =
-        request.user;
+      const {
+        email,
+        firstName,
+        lastName,
+        phoneNumber,
+        role,
+        id,
+        studentId,
+        teacherId,
+      } = request.user;
 
       if (role === Role.student) {
         const student = await this.getStudentByIdGrpc(studentId);
@@ -84,6 +95,22 @@ export class AuthController {
             id,
             studentId,
             student,
+          },
+        });
+      }
+      if (role === Role.teacher) {
+        const teacher = await this.getTeacherByIdGrpc(teacherId);
+        console.log(teacher);
+        return response.send({
+          user: {
+            email,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            id,
+            teacherId,
+            teacher,
           },
         });
       }
@@ -110,8 +137,10 @@ export class AuthController {
     try {
       await Promise.all(
         data.students.map(async (item) => {
-          if (item.email.toString().includes(MAIL_STUDENT))
+          if (item.email.toString().includes(MAIL_STUDENT)) {
             item.role = Role.student;
+            item.teacherId = '';
+          }
 
           const checkUser = await this.userService.getUserByEmail(item.email);
           if (checkUser) {
@@ -130,6 +159,40 @@ export class AuthController {
         }),
       );
       return { students: data.students };
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  @GrpcMethod('AuthService')
+  async registerTeacher(
+    data: SaveTeacherAccountForOwnerRequest,
+  ): Promise<SaveTeacherAccountForOwnerResponse> {
+    try {
+      await Promise.all(
+        data.teachers.map(async (item) => {
+          if (item.email.toString().includes(MAIL_TEACHER)) {
+            item.role = Role.teacher;
+            item.studentId = '';
+          }
+          const checkUser = await this.userService.getUserByEmail(item.email);
+          if (checkUser) {
+            throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
+          }
+          const teachers = await this.userService.createNewAccountTeacher(item);
+          await this.authService.generateTokenForVerify(teachers[0].id);
+
+          if (teachers.length < 0)
+            throw new HttpException(
+              'Error when register account, please check again ',
+              HttpStatus.BAD_REQUEST,
+            );
+
+          return item;
+        }),
+      );
+      return { teachers: data.teachers };
     } catch (error) {
       this.logger.error(error.message);
       throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
@@ -430,6 +493,22 @@ export class AuthController {
     try {
       const data = await firstValueFrom(
         this.universityService.getStudentByIdGrpc({
+          id,
+        }),
+      );
+      return data;
+    } catch (error) {
+      this.logger.error(
+        'Error when get information details for student from user service: ',
+        error.message,
+      );
+      return {};
+    }
+  }
+  public async getTeacherByIdGrpc(id: string): Promise<TeacherDetail> {
+    try {
+      const data = await firstValueFrom(
+        this.universityService.getTeacherByIdGrpc({
           id,
         }),
       );

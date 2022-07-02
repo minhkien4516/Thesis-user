@@ -27,4 +27,7 @@ export class CreateUserDTO {
 
   @IsString()
   studentId?: string | null;
+
+  @IsString()
+  teacherId?: string | null;
 }

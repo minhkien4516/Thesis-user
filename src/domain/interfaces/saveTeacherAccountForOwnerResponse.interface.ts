@@ -1,5 +1,5 @@
-export interface SaveStudentAccountForOwnerResponse {
-  students: Array<{
+export interface SaveTeacherAccountForOwnerResponse {
+  teachers: Array<{
     email?: string | null;
     password?: string | null;
     firstName?: string | null;

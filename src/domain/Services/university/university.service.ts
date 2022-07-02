@@ -5,11 +5,16 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { universityPackageProvideToken } from '../../../constants/university.constant';
 import { getStudentByIdForLoginRequest } from '../../interfaces/getStudentByIdForLoginRequest';
+import { getTeacherByIdForLoginRequest } from '../../interfaces/getTeacherByIdForLoginRequest';
+import { TeacherDetail } from '../../interfaces/getTeacherForClients.interface';
 
 interface IUniversityService {
   getStudentByIdGrpc(
     data: getStudentByIdForLoginRequest,
   ): Observable<StudentFilter>;
+  getTeacherByIdGrpc(
+    data: getTeacherByIdForLoginRequest,
+  ): Observable<TeacherDetail>;
 }
 
 @Controller()
@@ -31,5 +36,11 @@ export class UniversityService implements IUniversityService, OnModuleInit {
     data: getStudentByIdForLoginRequest,
   ): Observable<StudentFilter> {
     return this.universityService.getStudentByIdGrpc(data);
+  }
+
+  getTeacherByIdGrpc(
+    data: getStudentByIdForLoginRequest,
+  ): Observable<TeacherDetail> {
+    return this.universityService.getTeacherByIdGrpc(data);
   }
 }

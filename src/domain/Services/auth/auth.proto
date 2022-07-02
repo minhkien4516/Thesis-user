@@ -4,6 +4,7 @@ package auth;
 
 service AuthService {
     rpc RegisterStudent (SaveStudentAccountForOwnerRequest) returns (SaveStudentAccountForOwnerResponse);
+    rpc RegisterTeacher (SaveTeacherAccountForOwnerRequest) returns (SaveTeacherAccountForOwnerResponse);
 }
 
 message SaveStudent {
@@ -14,6 +15,18 @@ message SaveStudent {
     string phoneNumber = 5;
     string role = 6;
     string studentId = 7;
+    string teacherId = 8;
+}
+
+message SaveTeacher {
+    string email = 1;
+    string password = 2;
+    string firstName = 3;
+    string lastName = 4;
+    string phoneNumber = 5;
+    string role = 6;
+    string studentId = 7;
+    string teacherId = 8;
 }
 
 message SaveStudentAccountForOwnerRequest {
@@ -22,4 +35,13 @@ message SaveStudentAccountForOwnerRequest {
 
 message SaveStudentAccountForOwnerResponse {
     repeated SaveStudent students = 1;
+}
+
+
+message SaveTeacherAccountForOwnerRequest {
+    repeated SaveTeacher teachers = 1;
+}
+
+message SaveTeacherAccountForOwnerResponse {
+    repeated SaveTeacher teachers = 1;
 }

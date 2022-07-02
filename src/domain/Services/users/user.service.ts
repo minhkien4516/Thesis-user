@@ -17,7 +17,7 @@ export class UserService {
       const user = await this.sequelize.query(
         'SP_CreateNewUser @email=:email, @key=:key, ' +
           '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
-          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId',
+          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId,@teaherId=:teacherId',
         {
           type: QueryTypes.SELECT,
           replacements: {
@@ -27,6 +27,7 @@ export class UserService {
             phoneNumber: createUserDTO.phoneNumber,
             role: createUserDTO.role,
             studentId: createUserDTO.studentId,
+            teacherId: createUserDTO.teacherId,
             key,
           },
           raw: true,
@@ -47,7 +48,7 @@ export class UserService {
       const user = await this.sequelize.query(
         'SP_CreateNewUser @email=:email, @key=:key, ' +
           '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
-          '@presenterPhoneNumber=:phoneNumber, @role=:role , @studentId=:studentId',
+          '@presenterPhoneNumber=:phoneNumber, @role=:role , @studentId=:studentId,@teacherId=:teacherId',
         {
           type: QueryTypes.SELECT,
           replacements: {
@@ -57,6 +58,38 @@ export class UserService {
             phoneNumber: createUserDTO.phoneNumber,
             role: createUserDTO.role,
             studentId: createUserDTO.studentId,
+            teacherId: createUserDTO.teacherId,
+            key,
+          },
+          raw: true,
+          mapToModel: true,
+          model: User,
+        },
+      );
+      return user;
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new DatabaseError(error);
+    }
+  }
+
+  async createNewAccountTeacher(createUserDTO: CreateUserDTO) {
+    try {
+      const key = await hash(createUserDTO.password, 12);
+      const user = await this.sequelize.query(
+        'SP_CreateNewUser @email=:email, @key=:key, ' +
+          '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
+          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId,@teacherId=:teacherId',
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            email: createUserDTO.email,
+            firstName: createUserDTO.firstName,
+            lastName: createUserDTO.lastName,
+            phoneNumber: createUserDTO.phoneNumber,
+            role: createUserDTO.role,
+            studentId: createUserDTO.studentId,
+            teacherId: createUserDTO.teacherId,
             key,
           },
           raw: true,
