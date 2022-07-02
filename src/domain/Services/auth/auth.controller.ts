@@ -99,8 +99,7 @@ export class AuthController {
         });
       }
       if (role === Role.teacher) {
-        const teacher = await this.getTeacherByIdGrpc(teacherId);
-        console.log(teacher);
+        const detail = await this.getTeacherByIdGrpc(teacherId);
         return response.send({
           user: {
             email,
@@ -110,7 +109,7 @@ export class AuthController {
             role,
             id,
             teacherId,
-            teacher,
+            detail,
           },
         });
       }
