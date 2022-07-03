@@ -207,9 +207,14 @@ export class AuthController {
     try {
       if (createUserDTO.email.toString().includes(MAIL_STUDENT)) {
         createUserDTO.role = Role.student;
+        createUserDTO.teacherId = '';
+      } else if (createUserDTO.email.toString().includes(MAIL_TEACHER)) {
+        createUserDTO.role = Role.teacher;
+        createUserDTO.studentId = '';
       } else {
         createUserDTO.role = Role.corporation;
-        createUserDTO.studentId = null;
+        createUserDTO.studentId = '';
+        createUserDTO.teacherId = '';
       }
       const checkUser = await this.userService.getUserByEmail(
         createUserDTO.email,
