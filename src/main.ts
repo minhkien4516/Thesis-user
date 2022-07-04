@@ -16,7 +16,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   app.useGlobalGuards(new JwtAuthGuard(new Reflector()));
   app.useGlobalGuards(new RolesGuard(new Reflector()));
-  app.enableCors();
+  app.enableCors({ credentials: true, origin: 'http://localhost:3000' });
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true }));
 
   app.connectMicroservice({
