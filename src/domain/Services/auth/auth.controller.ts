@@ -100,6 +100,8 @@ export class AuthController {
       }
       if (role === Role.teacher) {
         const detail = await this.getTeacherByIdGrpc(teacherId);
+        if (Object.values(detail)[0][1] == undefined)
+          Object.values(detail)[1] = [];
         return response.send({
           user: {
             email,

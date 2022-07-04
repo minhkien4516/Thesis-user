@@ -15,6 +15,7 @@ export interface StudentsFilter {
   nameTeacher?: string;
   internshipCertification?: string;
   internshipReport?: string;
+  internshipGrade?: string;
   details?: StudentDetail[];
 }
 
@@ -36,6 +37,7 @@ export interface StudentFilter {
   nameTeacher?: string;
   internshipCertification?: string;
   internshipReport?: string;
+  internshipGrade?: string;
   cv?: [
     {
       id?: string;
@@ -120,6 +122,14 @@ export interface StudentFilter {
       studentAmount?: number;
       maximumStudentAmount?: number;
       slug?: string;
+    },
+  ];
+  detail?: [
+    {
+      studentId?: string;
+      teacherId?: string;
+      isRegistered?: boolean;
+      isAccepted?: boolean;
     },
   ];
 }

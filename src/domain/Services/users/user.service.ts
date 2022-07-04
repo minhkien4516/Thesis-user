@@ -17,7 +17,7 @@ export class UserService {
       const user = await this.sequelize.query(
         'SP_CreateNewUser @email=:email, @key=:key, ' +
           '@presenterFirstName=:firstName, @presenterLastName=:lastName, ' +
-          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId,@teaherId=:teacherId',
+          '@presenterPhoneNumber=:phoneNumber, @role=:role,@studentId=:studentId,@teacherId=:teacherId',
         {
           type: QueryTypes.SELECT,
           replacements: {
