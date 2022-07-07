@@ -100,20 +100,35 @@ export class AuthController {
       }
       if (role === Role.teacher) {
         const detail = await this.getTeacherByIdGrpc(teacherId);
-        if (Object.values(detail)[0][1] == undefined)
-          Object.values(detail)[1] = [];
-        return response.send({
-          user: {
-            email,
-            firstName,
-            lastName,
-            phoneNumber,
-            role,
-            id,
-            teacherId,
-            detail,
-          },
-        });
+        if (Object.values(detail)[0][1] == undefined) {
+          Object.values(detail)[0][1] = [];
+          detail.student = Object.values(detail)[0][1];
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        } else {
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        }
       }
       return response.send({
         user: {
