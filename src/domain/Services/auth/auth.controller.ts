@@ -112,7 +112,6 @@ export class AuthController {
             id,
             teacherId,
             detail,
-            token,
           },
         });
       }
