@@ -52,7 +52,121 @@ export class AuthController {
         response,
       );
       const user = await this.userService.getUserById(userID);
-      const { email, firstName, lastName, phoneNumber, role, id } = user;
+      const {
+        email,
+        firstName,
+        lastName,
+        phoneNumber,
+        role,
+        id,
+        studentId,
+        teacherId,
+      } = user;
+
+      if (role === Role.student) {
+        const student = await this.getStudentByIdGrpc(studentId);
+        return response.send({
+          user: {
+            email,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            id,
+            studentId,
+            student,
+          },
+        });
+      }
+      if (role === Role.teacher) {
+        const detail = await this.getTeacherByIdGrpc(teacherId);
+        if (
+          detail.student == undefined &&
+          detail.studentWaitingAccepted != undefined
+        ) {
+          detail.student = Object.values(detail)[0].student || [];
+
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        } else if (
+          detail.student != undefined &&
+          detail.studentWaitingAccepted == undefined
+        ) {
+          detail.studentWaitingAccepted =
+            Object.values(detail)[0].studentWaitingAccepted || [];
+
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        } else if (
+          detail.student == undefined &&
+          detail.studentWaitingAccepted == undefined
+        ) {
+          detail.student = Object.values(detail)[0].student || [];
+          detail.studentWaitingAccepted =
+            Object.values(detail)[0].studentWaitingAccepted || [];
+
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        } else if (
+          detail.student != undefined &&
+          detail.studentWaitingAccepted != undefined
+        ) {
+          return response.send({
+            user: {
+              email,
+              firstName,
+              lastName,
+              phoneNumber,
+              role,
+              id,
+              teacherId,
+              detail,
+            },
+          });
+        }
+      } else {
+        return response.send({
+          user: {
+            email,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            id,
+          },
+        });
+      }
+
       response
         .status(200)
         .json({ user: { email, firstName, lastName, phoneNumber, role, id } });
@@ -174,26 +288,6 @@ export class AuthController {
             },
           });
         }
-        //  else if (
-        //   Object.values(detail)[0][1] != undefined &&
-        //   Object.values(detail)[0][2] != undefined
-        // ) {
-        //   detail.student = Object.values(detail)[0].student;
-        //   detail.studentWaitingAccepted =
-        //     Object.values(detail)[0].studentWaitingAccepted;
-        //   return response.send({
-        //     user: {
-        //       email,
-        //       firstName,
-        //       lastName,
-        //       phoneNumber,
-        //       role,
-        //       id,
-        //       teacherId,
-        //       detail,
-        //     },
-        //   });
-        // }
       } else {
         return response.send({
           user: {

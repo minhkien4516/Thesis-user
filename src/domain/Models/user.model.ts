@@ -7,6 +7,8 @@ export class User extends Model {
   lastName: string;
   isActive: boolean;
   role: string;
+  studentId: string;
+  teacherId: string;
   phoneNumber: string;
   resetPasswordCode?: string;
   createdAt: Date;
