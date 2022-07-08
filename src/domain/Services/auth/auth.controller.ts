@@ -101,14 +101,11 @@ export class AuthController {
       if (role === Role.teacher) {
         const detail = await this.getTeacherByIdGrpc(teacherId);
         if (
-          Object.values(detail)[0][1] == undefined &&
-          Object.values(detail)[0][2] == undefined
+          detail.student == undefined &&
+          detail.studentWaitingAccepted != undefined
         ) {
-          Object.values(detail)[0].student = [];
-          Object.values(detail)[0].studentWaitingAccepted = [];
-          detail.student = Object.values(detail)[0].student;
-          detail.studentWaitingAccepted =
-            Object.values(detail)[0].studentWaitingAccepted;
+          detail.student = Object.values(detail)[0].student || [];
+
           return response.send({
             user: {
               email,
@@ -122,13 +119,12 @@ export class AuthController {
             },
           });
         } else if (
-          Object.values(detail)[0][1] != undefined &&
-          Object.values(detail)[0][2] == undefined
+          detail.student != undefined &&
+          detail.studentWaitingAccepted == undefined
         ) {
-          Object.values(detail)[0].studentWaitingAccepted = [];
-          detail.student = Object.values(detail)[0].student;
           detail.studentWaitingAccepted =
-            Object.values(detail)[0].studentWaitingAccepted;
+            Object.values(detail)[0].studentWaitingAccepted || [];
+
           return response.send({
             user: {
               email,
@@ -142,13 +138,13 @@ export class AuthController {
             },
           });
         } else if (
-          Object.values(detail)[0][1] == undefined &&
-          Object.values(detail)[0][2] != undefined
+          detail.student == undefined &&
+          detail.studentWaitingAccepted == undefined
         ) {
-          Object.values(detail)[0].student = [];
-          detail.student = Object.values(detail)[0].student;
+          detail.student = Object.values(detail)[0].student || [];
           detail.studentWaitingAccepted =
-            Object.values(detail)[0].studentWaitingAccepted;
+            Object.values(detail)[0].studentWaitingAccepted || [];
+
           return response.send({
             user: {
               email,
@@ -162,12 +158,9 @@ export class AuthController {
             },
           });
         } else if (
-          Object.values(detail)[0][1] != undefined &&
-          Object.values(detail)[0][2] != undefined
+          detail.student != undefined &&
+          detail.studentWaitingAccepted != undefined
         ) {
-          detail.student = Object.values(detail)[0].student;
-          detail.studentWaitingAccepted =
-            Object.values(detail)[0].studentWaitingAccepted;
           return response.send({
             user: {
               email,
@@ -181,17 +174,38 @@ export class AuthController {
             },
           });
         }
+        //  else if (
+        //   Object.values(detail)[0][1] != undefined &&
+        //   Object.values(detail)[0][2] != undefined
+        // ) {
+        //   detail.student = Object.values(detail)[0].student;
+        //   detail.studentWaitingAccepted =
+        //     Object.values(detail)[0].studentWaitingAccepted;
+        //   return response.send({
+        //     user: {
+        //       email,
+        //       firstName,
+        //       lastName,
+        //       phoneNumber,
+        //       role,
+        //       id,
+        //       teacherId,
+        //       detail,
+        //     },
+        //   });
+        // }
+      } else {
+        return response.send({
+          user: {
+            email,
+            firstName,
+            lastName,
+            phoneNumber,
+            role,
+            id,
+          },
+        });
       }
-      return response.send({
-        user: {
-          email,
-          firstName,
-          lastName,
-          phoneNumber,
-          role,
-          id,
-        },
-      });
     } catch (error) {
       this.logger.error(error.message);
       throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
