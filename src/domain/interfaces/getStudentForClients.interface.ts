@@ -13,9 +13,15 @@ export interface StudentsFilter {
   address?: string;
   phoneNumber?: string;
   nameTeacher?: string;
+  specialization?: string;
   internshipCertification?: string;
   internshipReport?: string;
-  internshipGrade?: string;
+  internshipFeedback?: string;
+  internshipSurvey?: string;
+  internshipFirstGrade?: string;
+  internshipSecondGrade?: string;
+  internshipThirdGrade?: string;
+  internshipFinalGrade?: string;
   details?: StudentDetail[];
 }
 
@@ -35,9 +41,15 @@ export interface StudentFilter {
   address?: string;
   phoneNumber?: string;
   nameTeacher?: string;
+  specialization?: string;
   internshipCertification?: string;
   internshipReport?: string;
-  internshipGrade?: string;
+  internshipFeedback?: string;
+  internshipSurvey?: string;
+  internshipFirstGrade?: string;
+  internshipSecondGrade?: string;
+  internshipThirdGrade?: string;
+  internshipFinalGrade?: string;
   cv?: [
     {
       id?: string;
