@@ -10,7 +10,7 @@ export class User extends Model {
   studentId: string;
   teacherId: string;
   phoneNumber: string;
-  resetPasswordCode?: string;
+  resetPasswordCode?: number;
   createdAt: Date;
   updatedAt: Date;
 }

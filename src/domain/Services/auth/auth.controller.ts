@@ -32,6 +32,7 @@ import { firstValueFrom } from 'rxjs';
 import { SaveTeacherAccountForOwnerRequest } from '../../interfaces/saveTeacherAccountForOwnerRequest.interface';
 import { SaveTeacherAccountForOwnerResponse } from '../../interfaces/saveTeacherAccountForOwnerResponse.interface';
 import { TeacherDetail } from '../../interfaces/getTeacherForClients.interface';
+import EmailService from '../../../utils/email/email.service';
 
 @Controller('auth')
 export class AuthController {
@@ -41,6 +42,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly universityService: UniversityService,
+    private emailService: EmailService,
   ) {}
 
   @Public()
@@ -323,7 +325,9 @@ export class AuthController {
             throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
           }
           const students = await this.userService.createNewAccountStudent(item);
-          await this.authService.generateTokenForVerify(students[0].id);
+          const token = await this.authService.generateTokenForVerify(
+            students[0].id,
+          );
 
           if (students.length < 0)
             throw new HttpException(
@@ -331,6 +335,16 @@ export class AuthController {
               HttpStatus.BAD_REQUEST,
             );
 
+          // const { host } = request.headers;
+          // if (item.role === Role.student) {
+          //   await this.emailService.sendRegistrationMail(
+          //     item.email,
+          //     item.firstName,
+          //     item.lastName,
+          //     host,
+          //     token,
+          //   );
+          // }
           return item;
         }),
       );
@@ -399,23 +413,24 @@ export class AuthController {
       if (checkUser)
         throw new HttpException('Email exists!', HttpStatus.BAD_REQUEST);
       const user = await this.userService.createNewUser(createUserDTO);
-      // console.log(user.role);
       const token = await this.authService.generateTokenForVerify(user.id);
-      // console.log(token);
-      // const { host } = request.headers;
-      // const { email, firstName, lastName } = createUserDTO;
-      // // await this.emailService.sendRegistrationMail(
-      // //   email,
-      // //   firstName,
-      // //   lastName,
-      // //   host,
-      // //   token,
-      // // );
+
+      const { email, firstName, lastName, role } = createUserDTO;
+      const { host } = request.headers;
+      if (role === Role.corporation) {
+        await this.emailService.sendRegistrationMail(
+          email,
+          firstName,
+          lastName,
+          host,
+          token,
+        );
+      }
       if (Object.values(user) != undefined)
         return {
           user,
           token,
-          // host,
+          host,
           message: 'Register account successfully!',
         };
       throw new HttpException(
@@ -449,13 +464,13 @@ export class AuthController {
       const token = await this.authService.generateTokenForVerify(user.id);
       const { firstName, lastName } = user;
       const { host } = request.headers;
-      // this.emailService.sendRegistrationMail(
-      //   email,
-      //   firstName,
-      //   lastName,
-      //   host,
-      //   token,
-      // );
+      this.emailService.sendRegistrationMail(
+        email,
+        firstName,
+        lastName,
+        host,
+        token,
+      );
       return { message: 'Verification email sent!' };
     } catch (error) {
       this.logger.error(error.message);
@@ -466,38 +481,20 @@ export class AuthController {
     }
   }
 
-  @Public()
-  @Post('resetPassword')
-  async ResetPassword(@Body('email') email: string) {
-    try {
-      const resetPasswordCode =
-        await this.userService.generateResetPasswordCode(email);
-      // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
-      const user = await this.userService.getUserByEmail(email);
-      await this.userService.resetPassword(email, user.phoneNumber);
-      return {
-        password: user.phoneNumber,
-        message:
-          'We have just set a new password for you. Please login again with password is your phoneNumber',
-        result: true,
-      };
-    } catch (error) {
-      this.logger.error(error.message);
-      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-  }
-
   // @Public()
-  // @Post('resetPasswordCode')
-  // async sendCodeToResetPassword(@Body('email') email: string) {
+  // @Post('resetPassword')
+  // async ResetPassword(@Body('email') email: string) {
   //   try {
   //     const resetPasswordCode =
   //       await this.userService.generateResetPasswordCode(email);
   //     // await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
+  //     const user = await this.userService.getUserByEmail(email);
+  //     await this.userService.resetPassword(email, user.phoneNumber);
   //     return {
-  //       resetPasswordCode,
+  //       password: user.phoneNumber,
   //       message:
-  //         'We have just sent instruction to your email! Please check your email!',
+  //         'We have just set a new password for you.' +
+  //         'Please login again with password is your phoneNumber',
   //       result: true,
   //     };
   //   } catch (error) {
@@ -507,9 +504,28 @@ export class AuthController {
   // }
 
   @Public()
+  @Post('resetPasswordCode')
+  async sendCodeToResetPassword(@Body('email') email: string) {
+    try {
+      const resetPasswordCode =
+        await this.userService.generateResetPasswordCode(email);
+      await this.emailService.sendResetPasswordCode(email, resetPasswordCode);
+      return {
+        resetPasswordCode,
+        message:
+          'We have just sent instruction to your email! Please check your email!',
+        result: true,
+      };
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(error.message, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  @Public()
   @Post('checkResetPasswordCode')
   async checkResetPasswordCode(
-    @Body() data: { resetPasswordCode: string; email: string },
+    @Body() data: { resetPasswordCode: number; email: string },
   ) {
     try {
       const user = await this.userService.getUserByEmail(data.email);
@@ -569,29 +585,36 @@ export class AuthController {
     }
   }
 
-  // @Public()
-  // @Get('confirmation/:token')
-  // async activateAccount(
-  //   @Param('token') token: string,
-  //   @Req() request: Request,
-  //   @Res() response: Response,
-  // ) {
-  //   try {
-  //     const userId = await this.authService.verifyToken(token, response);
-  //     if (!userId)
-  //       throw new HttpException('Token is not valid!', HttpStatus.BAD_REQUEST);
-  //     const user = await this.userService.activateUser(userId);
-  //     let redirectUrl = `http://${request.headers.host}`;
-  //     if (user.role === Role.corporation) redirectUrl += '/login';
-  //     response.status(201).redirect(redirectUrl);
-  //   } catch (error) {
-  //     this.logger.error(error.message);
-  //     throw new HttpException(
-  //       error.message,
-  //       error?.status || HttpStatus.SERVICE_UNAVAILABLE,
-  //     );
-  //   }
-  // }
+  @Public()
+  @Get('confirmation/:token')
+  async activateAccount(
+    @Param('token') token: string,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    try {
+      const userId = await this.authService.verifyToken(token, response);
+      if (!userId)
+        throw new HttpException('Token is not valid!', HttpStatus.BAD_REQUEST);
+      const user = await this.userService.getUserById(userId);
+      if (!user)
+        throw new HttpException('User does not exist!', HttpStatus.BAD_REQUEST);
+      await this.userService.activateUser(userId);
+      let redirectUrl = `http://${request.headers.host}`;
+      if (user.role === Role.corporation) {
+        redirectUrl += '/auth/login';
+        // redirectUrl += '/auth';
+        console.log(redirectUrl);
+        response.status(201).redirect(redirectUrl);
+      }
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(
+        error.message,
+        error?.status || HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+  }
 
   @Patch(':userId/password')
   async changePassword(

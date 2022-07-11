@@ -104,6 +104,18 @@ export class UserService {
     }
   }
 
+  async activateUser(userId: string) {
+    try {
+      await this.sequelize.query('SP_ActivateUser @id=:id', {
+        type: QueryTypes.UPDATE,
+        replacements: { id: userId },
+      });
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new DatabaseError(error);
+    }
+  }
+
   async getUserById(userId: string): Promise<User> {
     try {
       const user = await this.sequelize.query('SP_GetUserById @id=:id', {
